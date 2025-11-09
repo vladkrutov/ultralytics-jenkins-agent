@@ -1,13 +1,17 @@
 #!/bin/bash
 set -e
 
+log() {
+  printf '%s | %s\n' "$(date '+%Y-%m-%d %H:%M:%S.%3N')" "$*"
+}
+
 if [ -z "$JENKINS_URL" ]; then
-  echo "JENKINS_URL is required"
+  log "JENKINS_URL is required"
   exit 1
 fi
 
 if [ -z "$JENKINS_SECRET" ]; then
-  echo "JENKINS_SECRET is required"
+  log "JENKINS_SECRET is required"
   exit 1
 fi
 
@@ -15,15 +19,22 @@ if [ -z "$JENKINS_AGENT_NAME" ]; then
   JENKINS_AGENT_NAME="$(hostname)"
 fi
 
-AGENT_JAR="/home/jenkins/agent.jar"
+WORK_DIR="/home/jenkins/agent"
+AGENT_JAR="${WORK_DIR}/agent.jar"
+
+mkdir -p "$WORK_DIR"
 
 if [ ! -f "$AGENT_JAR" ]; then
-  echo "Downloading agent.jar from $JENKINS_URL"
-  curl -fsSL "$JENKINS_URL/jnlpJars/agent.jar" -o "$AGENT_JAR"
+  log "Downloading agent.jar from ${JENKINS_URL}"
+  curl -fsSL "${JENKINS_URL}/jnlpJars/agent.jar" -o "$AGENT_JAR"
 fi
+
+log "Starting agent '${JENKINS_AGENT_NAME}' with webSocket"
 
 exec java \
   -jar "$AGENT_JAR" \
-  -jnlpUrl "$JENKINS_URL/computer/$JENKINS_AGENT_NAME/jenkins-agent.jnlp" \
+  -url "$JENKINS_URL" \
+  -name "$JENKINS_AGENT_NAME" \
   -secret "$JENKINS_SECRET" \
-  -workDir "/home/jenkins/work"
+  -webSocket \
+  -workDir "$WORK_DIR"
