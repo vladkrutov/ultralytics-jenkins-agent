@@ -20,6 +20,9 @@ ARG gid=1000
 RUN groupadd -g ${gid} ${group} && \
     useradd -d /home/${user} -u ${uid} -g ${gid} -m -s /bin/bash ${user} && \
     mkdir -p /home/${user}/agent && \  
+    mkdir -p /home/${user}/agent/Ultralytics && \ 
+    mkdir -p /home/${user}/agent/Ultralytics/runs && \ 
+    mkdir -p /home/${user}/agent/Ultralytics/datasets && \ 
     chown -R ${user}:${group} /home/${user} 
 
 # Скрипт запуска агента
@@ -28,5 +31,8 @@ RUN chmod +x /usr/local/bin/jenkins-agent
 
 USER ${user}
 WORKDIR /home/${user}/agent
+RUN yolo settings \
+    datasets_dir=/home/${user}/agent/Ultralytics/datasets \
+    runs_dir=/home/${user}/agent/Ultralytics/runs
 
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/jenkins-agent"]
